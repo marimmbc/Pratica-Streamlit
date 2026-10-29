@@ -23,48 +23,88 @@ VARS_QUANT = [
     "FriedPotato_Consumption",
 ]
 
-with st.sidebar:
-    st.header("Filtros")
+st.markdown(
+    """
+    <style>
+    .st-key-variaveis [data-testid="stMultiSelectTagsContainer"],
+    .st-key-variaveis [data-testid="stMultiSelectTagsContainer"] > span[role="group"] {
+        flex-wrap: wrap;
+        overflow-x: hidden;
+    }
+    .st-key-variaveis div[role="group"]:has(> [data-testid="stMultiSelectTagsContainer"]) {
+        height: auto !important;
+        max-height: none !important;
+        min-height: 2.5rem;
+        align-items: flex-start;
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+    }
+    .st-key-variaveis [data-testid="stMultiSelectTagsContainer"] {
+        max-height: 9rem;
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-    variaveis = st.multiselect(
-        "Variáveis Quantitativas",
-        options=VARS_QUANT,
-        default=VARS_QUANT,
-        help="Selecione as variáveis quantitativas que deseja analisar no dashboard.",
-    )
+resumo = st.empty()
 
-    separar_por_classe = st.toggle(
-        "Distinguir por Classe",
-        value=False,
-        help="Colore a distribuição pela classe (Heart_Disease: No ou Yes).",
-    )
+with st.container(border=True):
+    st.markdown("**Filtros**")
+    col_variaveis, col_intervalos = st.columns([1.6, 3])
+
+    with col_variaveis:
+        variaveis = st.multiselect(
+            "Variáveis Quantitativas",
+            options=VARS_QUANT,
+            default=VARS_QUANT,
+            help="Selecione as variáveis quantitativas que deseja analisar no dashboard.",
+            key="variaveis",
+        )
+
+        separar_por_classe = st.toggle(
+            "Distinguir por Classe",
+            value=False,
+            help="Colore a distribuição pela classe (Heart_Disease: No ou Yes).",
+        )
 
     intervalos = {}
-    for var in variaveis:
-        if pd.api.types.is_integer_dtype(df[var]):
-            minimo, maximo, passo = int(df[var].min()), int(df[var].max()), 1
-        else:
-            minimo, maximo, passo = float(df[var].min()), float(df[var].max()), 0.1
-        intervalos[var] = st.slider(
-            f"Intervalo de {var}",
-            min_value=minimo,
-            max_value=maximo,
-            value=(minimo, maximo),
-            step=passo,
-            key=f"intervalo_{var}",
-        )
+    with col_intervalos:
+        for inicio in range(0, len(variaveis), 3):
+            colunas_slider = st.columns(3)
+            for coluna, var in zip(colunas_slider, variaveis[inicio : inicio + 3]):
+                if pd.api.types.is_integer_dtype(df[var]):
+                    minimo, maximo, passo = int(df[var].min()), int(df[var].max()), 1
+                else:
+                    minimo, maximo, passo = float(df[var].min()), float(df[var].max()), 0.1
+                with coluna:
+                    intervalos[var] = st.slider(
+                        f"Intervalo de {var}",
+                        min_value=minimo,
+                        max_value=maximo,
+                        value=(minimo, maximo),
+                        step=passo,
+                        key=f"intervalo_{var}",
+                    )
 
 df_filtrado = df
 for var, (inicio, fim) in intervalos.items():
     df_filtrado = df_filtrado[df_filtrado[var].between(inicio, fim)]
 
-st.caption(f"{len(df_filtrado):,} de {len(df):,} pacientes dentro dos intervalos escolhidos.")
+resumo.caption(f"{len(df_filtrado):,} de {len(df):,} pacientes dentro dos intervalos escolhidos.")
 
-col_correlacao, col_distribuicao = st.columns([1, 1.5])
+col_distribuicao, col_correlacao = st.columns([1.4, 1])
 
-COR_NORMAL = "#f4a6a6"
-COR_CARDIACO = "#c1121f"
-COR_HISTOGRAMA = COR_CARDIACO
+COR_ROSA = "#ffd6d6"
+COR_AZUL = "#0cc0df"
+COR_ROSA2 = "#cc007e"
+COR_CONTORNO = "#8a93a6"
+
+COR_NORMAL = COR_AZUL
+COR_CARDIACO = COR_ROSA
+COR_HISTOGRAMA = COR_ROSA
 CORES_CLASSE = alt.Scale(domain=["No", "Yes"], range=[COR_NORMAL, COR_CARDIACO])
 
 LEGENDA_CLASSE = (
@@ -104,16 +144,18 @@ with col_correlacao:
             color=alt.Color(
                 "correlacao:Q",
                 title="Spearman",
-                scale=alt.Scale(scheme="redblue", domain=[-1, 1], reverse=True),
+                scale=alt.Scale(
+                    domain=[-1, -0.5, 0, 0.5, 1],
+                    range=["#6cc9da", COR_AZUL, "#ffffff", COR_ROSA, "#f0959a"],
+                    interpolate="rgb",
+                ),
                 legend=alt.Legend(titleFontSize=14, labelFontSize=13),
             ),
             tooltip=["var_x", "var_y", alt.Tooltip("correlacao:Q", format=".2f")],
         )
         valores = base.mark_text(fontSize=16).encode(
             text=alt.Text("correlacao:Q", format=".2f"),
-            color=alt.condition(
-                "abs(datum.correlacao) > 0.5", alt.value("white"), alt.value("black")
-            ),
+            color=alt.value("black"),
         )
 
         st.altair_chart(
@@ -145,7 +187,7 @@ with col_distribuicao:
 
                 histograma = (
                     alt.Chart(contagem)
-                    .mark_bar()
+                    .mark_bar(stroke=COR_CONTORNO, strokeWidth=0.6)
                     .encode(
                         x=alt.X("inicio:Q", bin="binned", title=var),
                         x2="fim:Q",
@@ -160,7 +202,7 @@ with col_distribuicao:
                         tooltip=["Heart_Disease", alt.Tooltip("pacientes:Q", title="Pacientes", format=",")],
                     )
                 else:
-                    histograma = histograma.mark_bar(color=COR_HISTOGRAMA)
+                    histograma = histograma.mark_bar(color=COR_HISTOGRAMA, stroke=COR_CONTORNO, strokeWidth=0.6)
 
                 with coluna:
                     st.altair_chart(histograma, width="stretch", alt=f"Histograma da variável {var}")

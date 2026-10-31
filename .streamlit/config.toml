@@ -2,7 +2,7 @@
 paddingTop = "0.0rem"
 
 [theme.light]
-primaryColor = "#cc007e"
+primaryColor = "#ff6b81"
 backgroundColor = "#ffffff"
 secondaryBackgroundColor = "#f0f2f6"
 textColor = "#2d223a"

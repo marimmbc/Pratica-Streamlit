@@ -30,7 +30,7 @@ df["Doença cardíaca"] = df["Heart_Disease"].map({"No": SEM_DOENCA, "Yes": COM_
 
 COR_ROSA = "#ffd6d6"
 COR_AZUL = "#0cc0df"
-COR_ROSA2 = "#cc007e"
+COR_CORAL = "#ff6b81"
 COR_CONTORNO = "#8a93a6"
 
 COR_SEM_DOENCA = COR_AZUL
@@ -169,7 +169,8 @@ with aba1:
                     title="Correlação",
                     scale=alt.Scale(
                         domain=[-1, -0.5, 0, 0.5, 1],
-                        range=["#078ea6", COR_AZUL, "#ffffff", COR_ROSA, COR_ROSA2],
+                        range=["#078ea6", COR_AZUL, "#ffffff", COR_ROSA, COR_CORAL
+                    ],
                         interpolate="rgb",
                     ),
                     legend=alt.Legend(titleFontSize=13, labelFontSize=12),
@@ -418,3 +419,90 @@ with aba2:
             alt="Gráfico de barras com a porcentagem de pacientes com diabetes e com doença cardíaca por faixa de peso",
         )
         st.caption("Clique numa faixa de peso para destacá-la. Clique fora das barras para desfazer.")
+
+
+        COR_GRUPO_RISCO = COR_CORAL
+    
+        COR_GRUPO_REFERENCIA = "#7c9cff"
+
+        def grafico_por_faixa(condicao, grupo, nome_risco, nome_referencia, nome_condicao):
+            tabela = (
+                pd.DataFrame(
+                    {
+                        "Faixa etária": df_kpi["faixa_etaria"],
+                        "Grupo": grupo.map({True: nome_risco, False: nome_referencia}),
+                        nome_condicao: condicao,
+                    }
+                )
+                .groupby(["Faixa etária", "Grupo"], observed=True)
+                .agg(Porcentagem=(nome_condicao, "mean"), Pacientes=(nome_condicao, "size"))
+                .reset_index()
+            )
+            destaque = alt.selection_point(fields=["Faixa etária"])
+            return (
+                alt.Chart(tabela)
+                .mark_bar(stroke=COR_CONTORNO, strokeWidth=0.6)
+                .encode(
+                    x=alt.X(
+                        "Faixa etária:N",
+                        sort=FAIXAS_ETARIAS,
+                        title="Faixa etária (anos)",
+                        axis=alt.Axis(labelAngle=0, labelFontSize=12),
+                    ),
+                    xOffset=alt.XOffset("Grupo:N", sort=[nome_risco, nome_referencia]),
+                    y=alt.Y("Porcentagem:Q", title=f"% com {nome_condicao.lower()}", axis=alt.Axis(format="%")),
+                    color=alt.Color(
+                        "Grupo:N",
+                        scale=alt.Scale(
+                            domain=[nome_risco, nome_referencia],
+                            range=[COR_GRUPO_RISCO, COR_GRUPO_REFERENCIA],
+                        ),
+                        legend=alt.Legend(title=None, orient="top", labelFontSize=12),
+                    ),
+                    opacity=alt.condition(destaque, alt.value(1), alt.value(0.35)),
+                    tooltip=[
+                        "Faixa etária:N",
+                        "Grupo:N",
+                        alt.Tooltip("Porcentagem:Q", title=f"% com {nome_condicao.lower()}", format=".1%"),
+                        alt.Tooltip("Pacientes:Q", title="Pacientes no grupo", format=","),
+                    ],
+                )
+                .add_params(destaque)
+                .properties(height=320)
+            )
+
+        col_visual2, col_visual3 = st.columns(2)
+
+        with col_visual2:
+            st.subheader("Diabetes e exercício por idade")
+            st.caption("% com diabetes em quem faz e em quem não faz exercício.")
+            st.altair_chart(
+                grafico_por_faixa(
+                    tem_diabetes,
+                    ~pratica_exercicio,
+                    "Não faz exercício",
+                    "Faz exercício",
+                    "Diabetes",
+                ),
+                width="stretch",
+                alt="Gráfico de barras com a porcentagem de diabetes entre quem faz e quem não faz exercício, por faixa etária",
+            )
+
+        with col_visual3:
+            st.subheader("Doença cardíaca e tabagismo por idade")
+            st.caption("% com doença cardíaca em quem já fumou e em quem nunca fumou.")
+            st.altair_chart(
+                grafico_por_faixa(
+                    tem_doenca_cardiaca,
+                    fumante,
+                    "Já fumou",
+                    "Nunca fumou",
+                    "Doença cardíaca",
+                ),
+                width="stretch",
+                alt="Gráfico de barras com a porcentagem de doença cardíaca entre quem já fumou e quem nunca fumou, por faixa etária",
+            )
+
+        st.caption("Clique numa faixa etária para destacá-la. Clique fora das barras para desfazer.")
+
+        

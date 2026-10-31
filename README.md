@@ -4,7 +4,7 @@ Dashboard interativo em Streamlit que analisa como medidas corporais e hábitos 
 
 **🔗 Link do app:** https://mmbcpraticaavd.streamlit.app/
 
-Projeto desenvolvido na disciplina **Análise e Visualização de Dados** da **Cesar School** (2026.2), a partir da análise exploratória de dados (EDA) feita na Aula 11.
+Projeto desenvolvido na disciplina **Análise e Visualização de Dados** da **Cesar School** (2026.2).
 
 ## Sobre os dados
 

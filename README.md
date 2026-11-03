@@ -10,7 +10,7 @@ Projeto desenvolvido na disciplina **Análise e Visualização de Dados** da **C
 
 - **Dataset:** Cardiovascular Diseases Risk Prediction (Kaggle), com cerca de 308 mil pacientes
 - **Variáveis usadas:** altura, peso, IMC, consumo de álcool, frutas, vegetais verdes e batata frita, prática de exercício, histórico de tabagismo, diabetes, doença cardíaca, sexo e faixa etária
-- **Tratamento (no notebook de EDA):** remoção de linhas duplicadas e de valores fisicamente impossíveis (altura fora de 120–220 cm e IMC fora de 13–80), além da criação das colunas de sexo e faixa etária em português
+- **Tratamento (no notebook de EDA):** remoção de linhas duplicadas e de valores fisicamente impossíveis (altura fora de 120–220 cm e IMC fora de 13–80), além da criação das colunas de sexo e faixa etária
 
 ## Dashboards
 
